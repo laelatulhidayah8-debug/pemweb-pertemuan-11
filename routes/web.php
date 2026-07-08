@@ -2,16 +2,28 @@
 
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\DB;
+use App\Http\Controllers\BukuController;
+use App\Http\Controllers\AnggotaController;
+use App\Http\Controllers\DashboardController;
 use App\Models\Buku;
 use App\Models\Anggota;
+
 
 // ============================================================
 // Route Utama
 // ============================================================
 
 Route::get('/', function () {
-    return view('welcome');
-});
+    return view('home');
+})->name('home');
+
+Route::get('/buku/search',[BukuController::class,'search'])->name('buku.search');
+Route::get('/buku/kategori/{kategori}', [BukuController::class, 'filterKategori'])->name('buku.kategori');
+Route::resource('buku', BukuController::class);
+Route::resource('anggota', AnggotaController::class);
+Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+
 
 Route::get('/test-db', function () {
     try {
@@ -73,180 +85,6 @@ function layoutClose(): string
     </body></html>';
 }
 
-// ============================================================
-// Route Buku
-// ============================================================
-
-Route::get('/buku', function () {
-    $bukus = Buku::all();
-
-    $html  = layoutOpen('Daftar Buku');
-    $html .= '<div class="d-flex justify-content-between align-items-center mb-3">
-                <h1 class="h3 mb-0"><i class="bi bi-journals me-2 text-primary"></i>Daftar Buku</h1>
-              </div>';
-    $html .= '<div class="card">
-                <div class="card-header bg-primary text-white">
-                    <i class="bi bi-table me-1"></i> Total: ' . $bukus->count() . ' buku
-                </div>
-                <div class="card-body p-0">
-                <table class="table table-hover align-middle mb-0">
-                <thead class="table-dark">
-                <tr>
-                    <th>#</th>
-                    <th>Kode</th>
-                    <th>Judul</th>
-                    <th>Kategori</th>
-                    <th>Harga</th>
-                    <th>Stok</th>
-                    <th>Aksi</th>
-                </tr>
-                </thead><tbody>';
-
-    foreach ($bukus as $i => $buku) {
-        $html .= '<tr>';
-        $html .= '<td class="text-muted">' . ($i + 1) . '</td>';
-        $html .= '<td><span class="badge bg-secondary">' . $buku->kode_buku . '</span></td>';
-        $html .= '<td><strong>' . $buku->judul . '</strong></td>';
-        $html .= '<td><span class="badge bg-info text-dark">' . $buku->kategori . '</span></td>';
-        $html .= '<td class="text-success fw-semibold">' . $buku->harga_format . '</td>';
-        $html .= '<td>' . ($buku->stok > 0
-                    ? '<span class="badge bg-success">' . $buku->stok . '</span>'
-                    : '<span class="badge bg-danger">Habis</span>') . '</td>';
-        $html .= '<td><a href="/buku/' . $buku->id . '" class="btn btn-outline-primary btn-sm">
-                    <i class="bi bi-eye"></i> Detail</a></td>';
-        $html .= '</tr>';
-    }
-
-    $html .= '</tbody></table></div></div>';
-    $html .= layoutClose();
-    return $html;
-});
-
-Route::get('/buku/{id}', function ($id) {
-    $buku = Buku::findOrFail($id);
-
-    $html  = layoutOpen('Detail Buku');
-    $html .= '<div class="mb-3"><a href="/buku" class="btn btn-outline-secondary btn-sm">
-                <i class="bi bi-arrow-left"></i> Kembali</a></div>';
-    $html .= '<div class="card">
-                <div class="card-header bg-primary text-white">
-                    <i class="bi bi-book me-1"></i> Detail Buku
-                </div>
-                <div class="card-body">
-                <table class="table table-bordered align-middle">';
-
-    $rows = [
-        ['ID', $buku->id],
-        ['Kode Buku', '<span class="badge bg-secondary">' . $buku->kode_buku . '</span>'],
-        ['Judul', '<strong>' . $buku->judul . '</strong>'],
-        ['Kategori', '<span class="badge bg-info text-dark">' . $buku->kategori . '</span>'],
-        ['Pengarang', $buku->pengarang],
-        ['Penerbit', $buku->penerbit],
-        ['Tahun Terbit', $buku->tahun_terbit],
-        ['ISBN', $buku->isbn ?? '-'],
-        ['Harga', '<span class="text-success fw-semibold">' . $buku->harga_format . '</span>'],
-        ['Stok', $buku->stok],
-        ['Tersedia?', $buku->tersedia ? '<span class="badge bg-success">Ya</span>' : '<span class="badge bg-danger">Tidak</span>'],
-        ['Dibuat', $buku->created_at],
-        ['Diperbarui', $buku->updated_at],
-    ];
-
-    foreach ($rows as [$field, $value]) {
-        $html .= '<tr><th class="table-light" style="width:30%">' . $field . '</th><td>' . $value . '</td></tr>';
-    }
-
-    $html .= '</table></div></div>';
-    $html .= layoutClose();
-    return $html;
-});
-
-// ============================================================
-// Route Anggota
-// ============================================================
-
-Route::get('/anggota', function () {
-    $anggotas = Anggota::all();
-
-    $html  = layoutOpen('Daftar Anggota');
-    $html .= '<div class="d-flex justify-content-between align-items-center mb-3">
-                <h1 class="h3 mb-0"><i class="bi bi-people me-2 text-primary"></i>Daftar Anggota</h1>
-              </div>';
-    $html .= '<div class="card">
-                <div class="card-header bg-primary text-white">
-                    <i class="bi bi-table me-1"></i> Total: ' . $anggotas->count() . ' anggota
-                </div>
-                <div class="card-body p-0">
-                <table class="table table-hover align-middle mb-0">
-                <thead class="table-dark">
-                <tr>
-                    <th>#</th>
-                    <th>Kode</th>
-                    <th>Nama</th>
-                    <th>Email</th>
-                    <th>Umur</th>
-                    <th>Status</th>
-                    <th>Aksi</th>
-                </tr>
-                </thead><tbody>';
-
-    foreach ($anggotas as $i => $anggota) {
-        $html .= '<tr>';
-        $html .= '<td class="text-muted">' . ($i + 1) . '</td>';
-        $html .= '<td><span class="badge bg-secondary">' . $anggota->kode_anggota . '</span></td>';
-        $html .= '<td><strong>' . $anggota->nama . '</strong></td>';
-        $html .= '<td class="text-muted">' . $anggota->email . '</td>';
-        $html .= '<td>' . $anggota->umur . ' thn</td>';
-        $html .= '<td>' . ($anggota->status === 'Aktif'
-                    ? '<span class="badge bg-success">Aktif</span>'
-                    : '<span class="badge bg-secondary">Nonaktif</span>') . '</td>';
-        $html .= '<td><a href="/anggota/' . $anggota->id . '" class="btn btn-outline-primary btn-sm">
-                    <i class="bi bi-eye"></i> Detail</a></td>';
-        $html .= '</tr>';
-    }
-
-    $html .= '</tbody></table></div></div>';
-    $html .= layoutClose();
-    return $html;
-});
-
-Route::get('/anggota/{id}', function ($id) {
-    $anggota = Anggota::findOrFail($id);
-
-    $html  = layoutOpen('Detail Anggota');
-    $html .= '<div class="mb-3"><a href="/anggota" class="btn btn-outline-secondary btn-sm">
-                <i class="bi bi-arrow-left"></i> Kembali</a></div>';
-    $html .= '<div class="card">
-                <div class="card-header bg-primary text-white">
-                    <i class="bi bi-person me-1"></i> Detail Anggota
-                </div>
-                <div class="card-body">
-                <table class="table table-bordered align-middle">';
-
-    $rows = [
-        ['Kode Anggota', '<span class="badge bg-secondary">' . $anggota->kode_anggota . '</span>'],
-        ['Nama', '<strong>' . $anggota->nama . '</strong>'],
-        ['Email', $anggota->email],
-        ['Telepon', $anggota->telepon],
-        ['Alamat', $anggota->alamat],
-        ['Tanggal Lahir', $anggota->tanggal_lahir->format('d-m-Y')],
-        ['Umur', $anggota->umur . ' tahun'],
-        ['Jenis Kelamin', $anggota->jenis_kelamin],
-        ['Pekerjaan', $anggota->pekerjaan ?? '-'],
-        ['Tanggal Daftar', $anggota->tanggal_daftar->format('d-m-Y')],
-        ['Lama Anggota', $anggota->lama_anggota . ' hari'],
-        ['Status', $anggota->status === 'Aktif'
-            ? '<span class="badge bg-success">Aktif</span>'
-            : '<span class="badge bg-secondary">Nonaktif</span>'],
-    ];
-
-    foreach ($rows as [$field, $value]) {
-        $html .= '<tr><th class="table-light" style="width:30%">' . $field . '</th><td>' . $value . '</td></tr>';
-    }
-
-    $html .= '</table></div></div>';
-    $html .= layoutClose();
-    return $html;
-});
 
 // ============================================================
 // Route Testing Scope & Query
